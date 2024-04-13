@@ -1,0 +1,20 @@
+
+
+version: '3'
+
+services:
+  tunnel:
+    image: wernight/ngrok
+    container_name: ngrok
+    ports:
+      - "4040:4040"
+    command: ngrok http --authtoken 2PK5sbFAaoxK7FqI91FuT2gZ8vn_2Q2dLJAxkbksQrU8URr3X --domain=good-full-seasnail.ngrok-free.app fbservice:3105
+
+  fbservice:
+    container_name: fbservice
+    volumes:
+      - .:/app
+    build:
+      context: .
+    ports:
+      - "3105:3105"
