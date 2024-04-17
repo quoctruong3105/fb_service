@@ -1,0 +1,11 @@
+version: "2"
+authtoken: 2PK5sbFAaoxK7FqI91FuT2gZ8vn_2Q2dLJAxkbksQrU8URr3X
+web_addr: 0.0.0.0:4040
+update: false
+log: stdout
+
+tunnels:
+  fbservice:
+    addr: fbservice:3105
+    proto: http
+    domain: good-full-seasnail.ngrok-free.app

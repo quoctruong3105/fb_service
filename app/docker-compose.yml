@@ -1,15 +1,28 @@
 version: '3'
 
 services:
-  tunnel:
-    image: wernight/ngrok
-    container_name: ngrok
+  ngrok:
+      image: ngrok/ngrok:latest
+      restart: unless-stopped
+      command:
+        - "start"
+        - "--all"
+        - "--config"
+        - "/etc/ngrok.yml"
+      volumes:
+        - ./ngrok.yml:/etc/ngrok.yml
+      ports:
+        - 4040:4040
+
+  redis:
+    image: redis:alpine
     ports:
-      - "4040:4040"
-    command: ngrok http --authtoken 2PK5sbFAaoxK7FqI91FuT2gZ8vn_2Q2dLJAxkbksQrU8URr3X --domain=good-full-seasnail.ngrok-free.app fbservice:3105
+      - "3106:6379"
 
   fbservice:
     container_name: fbservice
+    depends_on:
+      - redis
     volumes:
       - .:/app
     build:
