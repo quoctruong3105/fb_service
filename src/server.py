@@ -1,15 +1,23 @@
 # coding: utf-8
 import os
+import json
+from redis import Redis
 parentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.sys.path.insert(0,parentdir)
 
-from flask import Flask, request, send_from_directory, render_template
+from flask import Flask, request, send_from_directory, render_template, g
 
-import example.messenger
-from example.config import CONFIG
-from example.fbpage import page
+import messenger
+from config import CONFIG
+from fbpage import page
 
 app = Flask(__name__)
+
+
+def get_redis():
+    if not hasattr(g, 'redis'):
+        g.redis = Redis(host="redis", db=0, socket_timeout=5)
+    return g.redis
 
 
 @app.route('/webhook', methods=['GET'])
@@ -28,6 +36,9 @@ def validate():
 def webhook():
     payload = request.get_data(as_text=True)
     print(payload)
+    redis = get_redis()
+    msg_data = json.dumps(payload)
+    redis.rpush('data', msg_data)
     page.handle_webhook(payload)
 
     return "ok"
