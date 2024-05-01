@@ -1,11 +1,13 @@
 # coding: utf-8
 import os
 import json
+import sqlite3
 from redis import Redis
+
 parentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.sys.path.insert(0,parentdir)
 
-from flask import Flask, request, send_from_directory, render_template, g
+from flask import Flask, jsonify, request, send_from_directory, render_template, g
 
 import messenger
 from config import CONFIG
@@ -18,6 +20,38 @@ def get_redis():
     if not hasattr(g, 'redis'):
         g.redis = Redis(host="redis", db=0, socket_timeout=5)
     return g.redis
+
+
+def get_db_connection():
+    conn = sqlite3.connect("./data/service.db")
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+@app.route('/add_new_page', methods=['POST', 'GET'])
+def add_new_page():
+    if request.method == 'POST':
+        data = request.data
+        data = json.loads(data.decode('utf-8'))
+        print(data)
+
+        page_id = data.get('page_id')
+        token = data.get('token')
+
+        if not page_id or not token:
+            return jsonify({'error': 'Sender ID and Page Token are required'}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("INSERT INTO page (page_id, token) VALUES (%s, %s)" % (page_id, token))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({'message': 'Page added successfully'}), 201
+
+    return 'Hello World', 200
 
 
 @app.route('/webhook', methods=['GET'])
@@ -34,12 +68,25 @@ def validate():
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    payload = request.get_data(as_text=True)
-    print(payload)
-    redis = get_redis()
-    msg_data = json.dumps(payload)
-    redis.rpush('data', msg_data)
-    page.handle_webhook(payload)
+    data = request.data
+    body = json.loads(data.decode('utf-8'))
+    if 'object' in body and body['object'] == 'page':
+        entries = body['entry']
+        for entry in entries:
+            message_event = json.dumps(entry['messaging'][0])
+            redis = get_redis()
+            redis.rpush('data', message_event)
+    # payload = request.get_data(as_text=True)
+    # print(payload)
+
+    # redis = get_redis()
+    # msg_data = json.dumps(payload)
+    # redis.rpush('data', msg_data)
+
+    # conn = get_db_connection()
+    # cusor = conn.cursor()
+    
+    # page.handle_webhook(payload)
 
     return "ok"
 

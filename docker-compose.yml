@@ -23,9 +23,9 @@ services:
     container_name: fbservice
     depends_on:
       - redis
-    # volumes:
-    #   - .:/app
     build:
       context: ./src
+    volumes:
+      - ./src/data:/app/data
     ports:
       - "3105:3105"
